@@ -8,10 +8,10 @@ import java.io.*;
 // import java.nio.file.Files;
 
 // 프론트 엔드
-// FilePath -> 입력받은 경로?
+// FilePath -> 입력받은 경로
 // FilePathSave -> 입력받은 경로 저장?
-// Editting -> ?
-// Result -> ?
+// Editing -> Edit화면 관리
+// Result -> result화면 관리
 
 // FilePath가 입력한 경로라고 치면은 이것을 IDE의 fullpath하고 filename으로
 // 분리해서 각각 넣은 뒤에 나머지 잘 하면 될 것 같음
@@ -33,7 +33,7 @@ public class IDE_2 extends JFrame {
 
     public IDE_2() {
         setTitle("Term_Project_2");
-        setSize(1000, 750);
+        setSize(1200, 1200);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
 
@@ -55,6 +55,7 @@ public class IDE_2 extends JFrame {
 
         // topPanel을 만들고 그 패널에 다른 패널을 만들어서 둘 곳을 저장한 후에
         // 그 패널들 다 topPanel에 넣음. 그리고 topPanel은 메인 패널에 넣음
+        // 이건 더 구체화하면 더 좋을것 같은데
         JPanel topPanel = new JPanel(new BorderLayout());
         JPanel first_top_panel = new JPanel(new BorderLayout());
         JPanel second_top_panel = new JPanel(new BorderLayout());
@@ -77,7 +78,7 @@ public class IDE_2 extends JFrame {
         add(topPanel, BorderLayout.NORTH);
 
         Editing = new JTextArea();
-        Editing.setFont(new Font("Monospaced", Font.PLAIN, 12));
+        Editing.setFont(new Font("Monospaced", Font.PLAIN, 24));
         JScrollPane editScroll = new JScrollPane(Editing);
         add(editScroll, BorderLayout.CENTER);
 
@@ -91,7 +92,7 @@ public class IDE_2 extends JFrame {
 
         Result = new JTextArea(8, 1);
         Result.setEditable(false);
-        Result.setFont(new Font("Monospaced", Font.PLAIN, 12));
+        Result.setFont(new Font("Monospaced", Font.PLAIN, 24));
         Result.setBackground(new Color(245, 245, 245));
         JScrollPane resultScroll = new JScrollPane(Result);
 
@@ -107,7 +108,7 @@ public class IDE_2 extends JFrame {
     // orz
     class IDE {
         public String Filename;
-        public boolean isCompile;
+        public boolean isCompileError;
         public String command;
         public String fullPath;
         public String s;
@@ -115,7 +116,7 @@ public class IDE_2 extends JFrame {
         public IDE() {
             fullPath = "";
             Filename = "";
-            isCompile = false;
+            isCompileError = false;
         }
 
         // 자바 파일안의 소스코드를 출력하는 함수
@@ -130,24 +131,99 @@ public class IDE_2 extends JFrame {
                 BufferedReader stdError = new BufferedReader(new InputStreamReader(oProcess.getErrorStream()));
 
                 String input = "";
+                boolean is_it_okay = false;
+
                 while ((s = stdOut.readLine()) != null) {
+                    is_it_okay = true;
                     input += s + "\n";
                 }
                 while ((s = stdError.readLine()) != null) {
                     input += s + "\n";
                 }
-                Editing.setText(input);
 
+                if (is_it_okay) {
+                    // 파일 존재할 경우 - Editing 화면에 출력
+                    Editing.setText(input);
+                } else {
+                    // 존재하지 않는 파일일 경우 - result화면에 오류 메세지 출력
+                    Result.setText(input);
+                }
                 // Editing.getText();
             } catch (IOException e) {
                 // TODO : handle exception
-                System.err.println("에러! 파일 실행 실패\n" + e.getMessage());
+                Result.setText("에러! 파일 실행 실패\n" + e.getMessage());
             }
         }
 
+        public void File_save() {
+            try {
+                String which_file;
+                if (FilePathSave.getText().equals("")) {
+                    which_file = Filename;
+                } else {
+                    which_file = FilePathSave.getText();
+                }
+                // cd하고 && javac사이에 있는 건 파일 경로
+                command = "cd /d " + fullPath + " && echo ";
+
+                for (int i = 0; i < Editing.getText().length(); i++) {
+                    if (Editing.getText().charAt(i) == '\n') {
+                        command += " >> " + which_file;
+                    }
+                    command += Editing.getText().charAt(i);
+                    if (Editing.getText().charAt(i) == '\n' && i + 1 != Editing.getText().length()) {
+                        command += "echo ";
+                    }
+                }
+
+                // System.out.println(FilePathSave.getText());
+                // if (FilePathSave.getText().equals("")) {
+                // System.out.println("asdf");
+                // }
+
+                // for (int i = 0; i < Editing.getText().length(); i++) {
+                // System.out.print(Editing.getText().charAt(i));
+                // }
+                // System.out.println(Editing.getText());
+                System.out.println(command);
+
+                ProcessBuilder t = new ProcessBuilder("cmd", "/c", command);
+                Process oProcess = t.start();
+                BufferedReader stdOut = new BufferedReader(new InputStreamReader(oProcess.getInputStream()));
+                BufferedReader stdError = new BufferedReader(new InputStreamReader(oProcess.getErrorStream()));
+
+                // String input = "";
+                // boolean is_it_okay = false;
+
+                // while ((s = stdOut.readLine()) != null) {
+                // is_it_okay = true;
+                // input += s + "\n";
+                // }
+                // while ((s = stdError.readLine()) != null) {
+                // input += s + "\n";
+                // }
+
+                // if (is_it_okay) {
+                // // 파일 존재할 경우 - Editing 화면에 출력
+                // Editing.setText(input);
+                // } else {
+                // // 존재하지 않는 파일일 경우 - result화면에 오류 메세지 출력
+                // Result.setText(input);
+                // }
+                // Editing.getText();
+            } catch (IOException e) {
+                // TODO : handle exception
+                Result.setText("에러! 파일 실행 실패\n" + e.getMessage());
+            }
+        }
+
+        // 자바 파일을 컴파일하는 함수
         public void File_Compile() {
             try {
                 // cd하고 && javac사이에 있는 건 파일 경로
+
+                // cmd가 자바 파일을 컴파일하도록 명령
+                // 컴파일하게 되면 filename의 class파일이 만들어짐
                 command = "cd /d " + fullPath + " && javac " + Filename;
 
                 ProcessBuilder t = new ProcessBuilder("cmd", "/c", command);
@@ -156,51 +232,60 @@ public class IDE_2 extends JFrame {
                 BufferedReader stdError = new BufferedReader(new InputStreamReader(oProcess.getErrorStream()));
 
                 while ((s = stdOut.readLine()) != null) {
-                    isCompile = true;
+                    isCompileError = true;
                 }
                 while ((s = stdError.readLine()) != null) {
-                    isCompile = true;
+                    isCompileError = true;
                 }
 
-                if (!isCompile) {
-                    System.out.println("compiled successfully");
+                if (!isCompileError) {
+                    // 컴파일 성공
+                    Result.setText("compiled successfully");
                 } else {
-                    System.out.println("3 comile error occurred -" + Filename + ".error");
+                    // 컴파일 실패
+                    Result.setText("comile error occurred -" + Filename + ".error");
                 }
             } catch (IOException e) {
                 // TODO : handle exception
-                System.err.println("에러! 파일 실행 실패\n" + e.getMessage());
+                Result.setText("에러! 파일 실행 실패\n" + e.getMessage());
             }
         }
 
+        // 자바 파일을 실행하는 함수
         public void File_run() {
             try {
                 // cd하고 && java사이에 있는 건 파일 경로
+
+                // cmd가 자바 파일을 실행하도록 명령
                 command = "cd /d" + fullPath + " && java " + Filename;
+
                 ProcessBuilder t = new ProcessBuilder("cmd", "/c", command);
                 Process process = t.start();
-
                 BufferedReader stdOut = new BufferedReader(new InputStreamReader(process.getInputStream()));
                 BufferedReader stdError = new BufferedReader(new InputStreamReader(process.getErrorStream()));
 
+                String input = "";
+
                 while ((s = stdOut.readLine()) != null) {
-                    System.out.println(s);
+                    input += s + "\n";
                 }
                 while ((s = stdError.readLine()) != null) {
-                    System.out.println(s);
+                    input += s + "\n";
                 }
+                // cmd의 종료값을 이 프로그램의 종료값으로
+                input += "Exit Value : " + process.exitValue();
 
-                System.out.println("Exit Code: " + process.exitValue());
+                Result.setText(input);
             } catch (Exception e) {
                 // TODO: handle exception
-                System.err.println("에러! 파일 실행 실패\n" + e.getMessage());
+                Result.setText("에러! 파일 실행 실패\n" + e.getMessage());
             }
         }
 
         public void Error_File() {
             try {
                 String Errorfile = Filename + ".error";
-                if (isCompile) {
+                if (isCompileError) {
                     System.out.println(Errorfile + "\n");
 
                     try {
@@ -219,14 +304,14 @@ public class IDE_2 extends JFrame {
                         }
                     } catch (IOException e) {
                         // TODO: handle exception
-                        System.err.println("에러! 외부 명령어 실행에 실패.\n" + e.getMessage());
+                        Result.setText("에러! 외부 명령어 실행에 실패.\n" + e.getMessage());
                     }
                 } else {
-                    System.out.println("오류 파일이 존재하지 않습니다.");
+                    Result.setText("오류 파일이 존재하지 않습니다.");
                 }
             } catch (Exception e) {
                 // TODO: handle exception
-                System.out.println("에러! 오류 파일 읽기 실패: " + e.getMessage());
+                Result.setText("에러! 오류 파일 읽기 실패: " + e.getMessage());
             }
         }
     }
@@ -250,7 +335,7 @@ public class IDE_2 extends JFrame {
             } else if (b.getText().equals("Delete")) {
                 be.file_delete_action();
             } else if (b.getText().equals("Save Error")) {
-
+                be.file_error_action();
             } else {
                 be.file_clear_action();
             }
@@ -263,12 +348,14 @@ public class IDE_2 extends JFrame {
         public void file_open_action() {
             // 입력한 파일 경로
             String Path = FilePath.getText();
-            // 근데 입력한 파일 경로 올바른지에 대한 예외처리가 필요함
-            // ...
-
             // 이 경로를 베이스로 마지막 \의 인덱스를 저장 (저장된 인덱스로부터 바로 다음 인덱스부터는 파일의 이름과 확장자)
             // 이러면 O(N)의 시간복잡도가 나오긴 하는데 ide.fullPath의 길이가 10^9이상만 아니면 되니까 무난할듯
             int current_index = 0;
+
+            // result, editing창 초기화
+            Result.setText("");
+            Editing.setText("");
+
             for (int i = 0; i < Path.length(); i++) {
                 if (Path.charAt(i) == '\\') {
                     current_index = i;
@@ -280,28 +367,31 @@ public class IDE_2 extends JFrame {
             for (int i = current_index + 1; i < Path.length(); i++) {
                 ide.Filename += Path.charAt(i);
             }
-            System.out.println(ide.fullPath);
-            System.out.println(ide.Filename);
+            // System.out.println(ide.fullPath);
+            // System.out.println(ide.Filename);
             ide.File_print();
         }
 
         public void file_save_aciton() {
-
+            // 구현중..
+            // String ssss = Editing.getText();
+            // System.out.println(ssss);
+            ide.File_save();
         }
 
         public void file_compile_action() {
-            if (ide.Filename == null) {
-                System.out.println("파일이 업로드 되지 않음.");
+            if (ide.Filename.equals("")) {
+                Result.setText("파일이 업로드 되지 않음.");
             } else {
                 ide.File_Compile();
             }
         }
 
         public void file_run_action() {
-            if (ide.Filename == null) {
-                System.out.println("파일이 업로드 되지 않음.");
-            } else if (!ide.isCompile) {
-                System.out.println("컴파일 에러 - 실행 불가");
+            if (ide.Filename.equals("")) {
+                Result.setText("파일이 업로드 되지 않음.");
+            } else if (ide.isCompileError) {
+                Result.setText("컴파일 에러 - 실행 불가");
             } else {
                 ide.File_run();
             }
@@ -309,20 +399,20 @@ public class IDE_2 extends JFrame {
 
         public void file_error_action() {
             String error_file = ide.Filename + ".error";
-            if (ide.isCompile) {
-                System.out.println(error_file + '\n');
+            if (ide.isCompileError) {
+                Result.setText(error_file + '\n');
             } else {
-                System.out.println("오류 파일이 존재하지 않습니다");
+                Result.setText("오류 파일이 존재하지 않습니다");
             }
         }
 
         public void file_delete_action() {
-            if (ide.Filename == null) {
-                System.out.println("오류, 업로드된 파일이 없음");
+            if (ide.Filename.equals("")) {
+                Result.setText("오류, 업로드된 파일이 없음");
             } else {
-                ide.Filename = null;
-                ide.isCompile = false;
-                System.out.println("파일 삭제 완료");
+                ide.Filename = "";
+                ide.isCompileError = false;
+                Result.setText("파일 삭제 완료");
             }
         }
 
@@ -331,8 +421,9 @@ public class IDE_2 extends JFrame {
             FilePathSave.setText("");
             Editing.setText("");
             Result.setText("");
-            ide.Filename = null;
-            ide.isCompile = false;
+            ide.fullPath = "";
+            ide.Filename = "";
+            ide.isCompileError = false;
         }
     }
 
