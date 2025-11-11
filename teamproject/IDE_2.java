@@ -1,5 +1,4 @@
 import javax.swing.*;
-import javax.swing.filechooser.FileNameExtensionFilter;
 
 import java.awt.*;
 import java.awt.event.*;
@@ -151,69 +150,88 @@ public class IDE_2 extends JFrame {
                 // Editing.getText();
             } catch (IOException e) {
                 // TODO : handle exception
-                Result.setText("에러! 파일 실행 실패\n" + e.getMessage());
+                Result.setText("에러! 파일 오픈 실패\n" + e.getMessage());
             }
         }
 
-        public void File_save() {
+        // (기존 or 신규) 파일에 내용을 저장하는 함수
+        public void File_save_write(String which_file, String which_string) {
             try {
-                String which_file;
-                if (FilePathSave.getText().equals("")) {
-                    which_file = Filename;
-                } else {
-                    which_file = FilePathSave.getText();
-                }
-                // cd하고 && javac사이에 있는 건 파일 경로
-                command = "cd /d " + fullPath + " && echo ";
-
-                for (int i = 0; i < Editing.getText().length(); i++) {
-                    if (Editing.getText().charAt(i) == '\n') {
+                // System.out.println(which_file);
+                // System.out.println(which_string);
+                command = "cd " + fullPath + " && echo ";
+                // 덮어쓰기를 했는지 여부
+                // 들여쓰기를 기준으로 save할 파일에 저장
+                int command_length = command.length();
+                for (int i = 0; i < which_string.length(); i++) {
+                    if (which_string.charAt(i) == '\n') {
                         command += " >> " + which_file;
+                        ProcessBuilder t = new ProcessBuilder("cmd", "/c", command);
+                        t.start();
+                        // System.out.println(command);
+                        command = "cd " + fullPath + " && echo ";
+                        continue;
                     }
-                    command += Editing.getText().charAt(i);
-                    if (Editing.getText().charAt(i) == '\n' && i + 1 != Editing.getText().length()) {
-                        command += "echo ";
-                    }
+                    command += which_string.charAt(i);
                 }
+                if (command_length != command.length()) {
+                    command += " >> " + which_file;
+                    ProcessBuilder t = new ProcessBuilder("cmd", "/c", command);
+                    t.start();
+                }
+            } catch (IOException e) {
+                Result.setText("에러! 파일 세이브 실패\n" + e.getMessage());
+            }
+        }
 
-                // System.out.println(FilePathSave.getText());
-                // if (FilePathSave.getText().equals("")) {
-                // System.out.println("asdf");
-                // }
-
-                // for (int i = 0; i < Editing.getText().length(); i++) {
-                // System.out.print(Editing.getText().charAt(i));
-                // }
-                // System.out.println(Editing.getText());
-                System.out.println(command);
+        // 새로운 파일을 만들려고 하는데 이미 경로에 동일한 이름의 파일이 있는지 체크해주는 함수
+        public boolean File_save_check(String which_file) {
+            try {
+                command = "cd /d " + fullPath + " && type " + which_file;
+                // 덮어쓰기를 했는지 여부
+                // 들여쓰기를 기준으로 save할 파일에 저장
 
                 ProcessBuilder t = new ProcessBuilder("cmd", "/c", command);
                 Process oProcess = t.start();
-                BufferedReader stdOut = new BufferedReader(new InputStreamReader(oProcess.getInputStream()));
                 BufferedReader stdError = new BufferedReader(new InputStreamReader(oProcess.getErrorStream()));
 
-                // String input = "";
-                // boolean is_it_okay = false;
+                boolean is_it_exist = true;
+                if ((s = stdError.readLine()) != null) {
+                    is_it_exist = false;
+                }
 
-                // while ((s = stdOut.readLine()) != null) {
-                // is_it_okay = true;
-                // input += s + "\n";
-                // }
-                // while ((s = stdError.readLine()) != null) {
-                // input += s + "\n";
-                // }
-
-                // if (is_it_okay) {
-                // // 파일 존재할 경우 - Editing 화면에 출력
-                // Editing.setText(input);
-                // } else {
-                // // 존재하지 않는 파일일 경우 - result화면에 오류 메세지 출력
-                // Result.setText(input);
-                // }
-                // Editing.getText();
+                return is_it_exist;
             } catch (IOException e) {
+                Result.setText("에러! 파일 체크 실패\n" + e.getMessage());
+                return false;
+            }
+        }
+
+        // Overwrite는 어떻게? cmd에 유용한 기능이 있지 않을까? -> >> 대신에 > 쓰면 덮어쓰기 가능함
+        public void File_save() {
+            try {
+                if (FilePathSave.getText().equals("")) {
+                    // 아ㅣㄴ 왜 뭐가 문젠데
+                    command = "cd " + fullPath + " && del " + Filename;
+                    ProcessBuilder t = new ProcessBuilder("cmd", "/c", command);
+                    t.start();
+                    File_save_write(Filename, Editing.getText());
+                    Result.setText("Successful Save\n");
+                } else {
+                    if (File_save_check(FilePathSave.getText())) {
+                        Result.setText("이미 해당하는 파일이 존재합니다.\n");
+                    } else {
+                        Filename = FilePathSave.getText();
+                        Result.setText("Successful Save\n");
+                        File_save_write(FilePathSave.getText(), Editing.getText());
+                    }
+                }
+                // ProcessBuilder t = new ProcessBuilder("cmd", "/c", command);
+                // t.start();
+
+            } catch (Exception e) {
                 // TODO : handle exception
-                Result.setText("에러! 파일 실행 실패\n" + e.getMessage());
+                Result.setText("에러! 파일 세이브 실패\n" + e.getMessage());
             }
         }
 
@@ -231,12 +249,16 @@ public class IDE_2 extends JFrame {
                 BufferedReader stdOut = new BufferedReader(new InputStreamReader(oProcess.getInputStream()));
                 BufferedReader stdError = new BufferedReader(new InputStreamReader(oProcess.getErrorStream()));
 
-                while ((s = stdOut.readLine()) != null) {
+                if ((s = stdOut.readLine()) != null) {
+                    isCompileError = false;
+                }
+                if ((s = stdError.readLine()) != null) {
                     isCompileError = true;
                 }
-                while ((s = stdError.readLine()) != null) {
-                    isCompileError = true;
-                }
+
+                // System.out.println(isCompileError);
+                // System.out.println(Filename);
+                // System.out.println(fullPath);
 
                 if (!isCompileError) {
                     // 컴파일 성공
@@ -247,7 +269,7 @@ public class IDE_2 extends JFrame {
                 }
             } catch (IOException e) {
                 // TODO : handle exception
-                Result.setText("에러! 파일 실행 실패\n" + e.getMessage());
+                Result.setText("에러! 파일 컴파일 실패\n" + e.getMessage());
             }
         }
 
@@ -284,24 +306,21 @@ public class IDE_2 extends JFrame {
 
         public void Error_File() {
             try {
-                String Errorfile = Filename + ".error";
                 if (isCompileError) {
-                    System.out.println(Errorfile + "\n");
-
                     try {
+                        String error_file = Filename + ".error";
+
                         command = "cd /d " + fullPath + " && javac " + Filename;
                         ProcessBuilder t = new ProcessBuilder("cmd", "/c", command);
                         Process oProcess = t.start();
 
-                        BufferedReader stdOut = new BufferedReader(new InputStreamReader(oProcess.getInputStream()));
                         BufferedReader stdError = new BufferedReader(new InputStreamReader(oProcess.getErrorStream()));
 
-                        while ((s = stdOut.readLine()) != null) {
-                            System.out.println(s);
-                        }
+                        String error_string = "";
                         while ((s = stdError.readLine()) != null) {
-                            System.out.println(s);
+                            error_string += s;
                         }
+                        File_save_write(error_file, error_string);
                     } catch (IOException e) {
                         // TODO: handle exception
                         Result.setText("에러! 외부 명령어 실행에 실패.\n" + e.getMessage());
@@ -373,9 +392,6 @@ public class IDE_2 extends JFrame {
         }
 
         public void file_save_aciton() {
-            // 구현중..
-            // String ssss = Editing.getText();
-            // System.out.println(ssss);
             ide.File_save();
         }
 
@@ -398,11 +414,10 @@ public class IDE_2 extends JFrame {
         }
 
         public void file_error_action() {
-            String error_file = ide.Filename + ".error";
             if (ide.isCompileError) {
-                Result.setText(error_file + '\n');
+                ide.Error_File();
             } else {
-                Result.setText("오류 파일이 존재하지 않습니다");
+                Result.setText("파일에 오류가 존재하지 않습니다");
             }
         }
 
@@ -410,6 +425,7 @@ public class IDE_2 extends JFrame {
             if (ide.Filename.equals("")) {
                 Result.setText("오류, 업로드된 파일이 없음");
             } else {
+                ide.fullPath = "";
                 ide.Filename = "";
                 ide.isCompileError = false;
                 Result.setText("파일 삭제 완료");
