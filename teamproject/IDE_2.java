@@ -2,7 +2,6 @@ import javax.swing.*;
 
 import java.awt.*;
 import java.awt.event.*;
-import java.awt.event.ActionEvent;
 import java.io.*;
 // import java.nio.file.Files;
 
@@ -157,28 +156,9 @@ public class IDE_2 extends JFrame {
         // (기존 or 신규) 파일에 내용을 저장하는 함수
         public void File_save_write(String which_file, String which_string) {
             try {
-                // System.out.println(which_file);
-                // System.out.println(which_string);
-                command = "cd " + fullPath + " && echo ";
-                // 덮어쓰기를 했는지 여부
-                // 들여쓰기를 기준으로 save할 파일에 저장
-                int command_length = command.length();
-                for (int i = 0; i < which_string.length(); i++) {
-                    if (which_string.charAt(i) == '\n') {
-                        command += " >> " + which_file;
-                        ProcessBuilder t = new ProcessBuilder("cmd", "/c", command);
-                        t.start();
-                        // System.out.println(command);
-                        command = "cd " + fullPath + " && echo ";
-                        continue;
-                    }
-                    command += which_string.charAt(i);
-                }
-                if (command_length != command.length()) {
-                    command += " >> " + which_file;
-                    ProcessBuilder t = new ProcessBuilder("cmd", "/c", command);
-                    t.start();
-                }
+                FileWriter fout = new FileWriter(fullPath + which_file);
+                fout.write(which_string);
+                fout.close();
             } catch (IOException e) {
                 Result.setText("에러! 파일 세이브 실패\n" + e.getMessage());
             }
@@ -212,9 +192,6 @@ public class IDE_2 extends JFrame {
             try {
                 if (FilePathSave.getText().equals("")) {
                     // 아ㅣㄴ 왜 뭐가 문젠데
-                    command = "cd " + fullPath + " && del " + Filename;
-                    ProcessBuilder t = new ProcessBuilder("cmd", "/c", command);
-                    t.start();
                     File_save_write(Filename, Editing.getText());
                     Result.setText("Successful Save\n");
                 } else {
