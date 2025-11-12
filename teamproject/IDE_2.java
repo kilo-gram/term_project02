@@ -281,6 +281,22 @@ public class IDE_2 extends JFrame {
             }
         }
 
+        // 파일 삭제 함수
+        public void File_delete() {
+            try {
+                // cd하고 && del사이에 있는 건 파일 경로
+
+                // cmd가 자바 파일을 실행하도록 명령
+                command = "cd /d" + fullPath + " && del " + Filename;
+
+                ProcessBuilder t = new ProcessBuilder("cmd", "/c", command);
+                t.start();
+            } catch (Exception e) {
+                // TODO: handle exception
+                Result.setText("에러! 파일 삭제 실패\n" + e.getMessage());
+            }
+        }
+
         public void Error_File() {
             try {
                 if (isCompileError) {
@@ -408,6 +424,7 @@ public class IDE_2 extends JFrame {
             if (ide.Filename.equals("")) {
                 Result.setText("오류, 업로드된 파일이 없음");
             } else {
+                ide.File_delete();
                 ide.fullPath = "";
                 ide.Filename = "";
                 ide.isCompileError = false;
