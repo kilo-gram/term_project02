@@ -198,9 +198,9 @@ public class IDE_2 extends JFrame {
                     if (File_save_check(FilePathSave.getText())) {
                         Result.setText("이미 해당하는 파일이 존재합니다.\n");
                     } else {
-                        Filename = FilePathSave.getText();
+                        separate_into_two_section(FilePathSave.getText());
+                        File_save_write(Filename, Editing.getText());
                         Result.setText("Successful Save\n");
-                        File_save_write(FilePathSave.getText(), Editing.getText());
                     }
                 }
                 // ProcessBuilder t = new ProcessBuilder("cmd", "/c", command);
@@ -310,6 +310,25 @@ public class IDE_2 extends JFrame {
                 Result.setText("에러! 오류 파일 읽기 실패: " + e.getMessage());
             }
         }
+
+        // 경로와 파일.확장자를 분리해 주는 함수
+        public void separate_into_two_section(String path) {
+            ide.fullPath = "";
+            ide.Filename = "";
+            int current_index = 0;
+            for (int i = 0; i < path.length(); i++) {
+                if (path.charAt(i) == '\\') {
+                    current_index = i;
+                }
+            }
+            for (int i = 0; i < current_index + 1; i++) {
+                ide.fullPath += path.charAt(i);
+            }
+            for (int i = current_index + 1; i < path.length(); i++) {
+                ide.Filename += path.charAt(i);
+            }
+        }
+
     }
 
     //
@@ -346,25 +365,12 @@ public class IDE_2 extends JFrame {
             String Path = FilePath.getText();
             // 이 경로를 베이스로 마지막 \의 인덱스를 저장 (저장된 인덱스로부터 바로 다음 인덱스부터는 파일의 이름과 확장자)
             // 이러면 O(N)의 시간복잡도가 나오긴 하는데 ide.fullPath의 길이가 10^9이상만 아니면 되니까 무난할듯
-            int current_index = 0;
 
             // result, editing창 초기화
             Result.setText("");
             Editing.setText("");
 
-            for (int i = 0; i < Path.length(); i++) {
-                if (Path.charAt(i) == '\\') {
-                    current_index = i;
-                }
-            }
-            for (int i = 0; i < current_index + 1; i++) {
-                ide.fullPath += Path.charAt(i);
-            }
-            for (int i = current_index + 1; i < Path.length(); i++) {
-                ide.Filename += Path.charAt(i);
-            }
-            // System.out.println(ide.fullPath);
-            // System.out.println(ide.Filename);
+            ide.separate_into_two_section(Path);
             ide.File_print();
         }
 
